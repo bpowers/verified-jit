@@ -22,7 +22,7 @@ let spec =
 let main =
   Command.basic
     ~summary:"Run a bytecode program"
-    ~readme:(fun () -> "Arguments are the bytecode program followed by ints to push onto the stack")
+    ~readme:(fun () -> "JIT compiles and executes x86 instructions corresponding to the bytecode.")
     spec
     (fun bytecode args () -> eval bytecode args)
 
