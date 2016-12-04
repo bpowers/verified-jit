@@ -63,7 +63,8 @@ let next (xs: int list) (l: int) (p: int) (cs: prog) =
                                        then (xs, l, i, cs)
                                        else (xs, l, p+1, cs)
                       | _           -> failwith "stuck in jlt")
-  | _             -> failwith "stuck"
+  | Some Stop     -> failwith "stuck (unexpected stop)"
+  | None          -> failwith (Printf.sprintf "stuck (bad fetch of %d)" p)
 
 (**
   exec describes the effect of successfully executing a bytecode program
