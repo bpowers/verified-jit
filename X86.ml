@@ -1,0 +1,91 @@
+open Syntax
+
+(** CPU registers *)
+type reg =
+  | EAX
+  | EDX
+  | EDI
+  | EIP
+[@@deriving show]
+
+(** CPU status bits *)
+type eflags =
+  | CF
+  | PF
+  | AF
+  | ZF
+  | SF
+
+(** memory permissions *)
+type perm =
+  | R
+  | W
+  | X
+
+(** constant *)
+type imm = int
+[@@deriving show]
+
+type rm =
+  | Reg of reg
+  | Mem of int
+[@@deriving show]
+
+type cond =
+  | ALWAYS (* used for unconditional relative jumps *)
+  | E (* E = equal *)
+  | B (* B = below *)
+  (* full conditions supported by x86: *)
+  (* | E | NE *)
+  (* | S | NS *)
+  (* | A | NA *)
+  (* | B | NB *)
+[@@deriving show]
+
+type dest_src =
+  | RM_I of rm * imm
+  | RM_R of rm * reg
+  | R_RM of reg * rm
+[@@deriving show]
+
+type binop =
+  | Mov
+  | Add
+  | Sub
+  | Cmp
+[@@deriving show]
+
+type instr =
+  | Binop of binop * dest_src
+  | Xchg of rm * reg
+  | Jcc of cond * imm (* jump based on a condition code, include jmp rel *)
+  | Jmp of rm         (* excludes relative jumps *)
+[@@deriving show]
+
+let rec encode (a: int) (cs: prog): instr list =
+  (* FIXME: needs to be length of bytes, not # of x86 instructions *)
+  let rec xenc_length c =
+    List.length (xenc (fun x -> 0) c)
+  and xenc (t: int -> int) (c: Syntax.instr): instr list =
+    match c with
+    | Pop    -> [Binop (Mov, R_RM (EAX, Reg EDI));
+		 Binop (Add, RM_I (Reg EDI, 4))]
+    | Sub    -> [Binop (Sub, R_RM (EAX, Reg EDI))]
+    | Swap   -> [Xchg (Reg EDI, EAX)]
+    | Push i -> [Binop (Sub, RM_I (Reg EDI, 4));
+		 Binop (Mov, RM_R (Reg EDI, EAX));
+		 Binop (Mov, RM_I (Reg EAX, i))]
+    | Jump i -> [Jcc (ALWAYS, (t i))]
+    | Jeq i  -> [Binop (Cmp, R_RM (EAX, Reg EDI));
+		 Jcc (E, (t i))]
+    | Jlt i  -> [Binop (Cmp, R_RM (EAX, Reg EDI));
+		 Jcc (B, (t i))]
+    | Stop   -> [Jmp (Reg EDX)]
+  in
+  let rec addr cs a p: int =
+    match (cs, a, p) with
+    | _, a, 0       -> a
+    | [], a, _      -> a
+    | c :: cs, a, p -> addr cs (a + xenc_length c) (p - 1)
+  in
+  List.flatten (List.map (fun c -> xenc (addr cs a) c) cs)

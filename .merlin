@@ -1,2 +1,2 @@
 B _build
-PKG core
+PKG core ppx_deriving.std
