@@ -10,6 +10,7 @@ Plugins:      META (0.4), DevFiles (0.4)
 BuildDepends: core, threads
 
 Executable "verified-jit"
-  Path:       .
-  BuildTools: ocamlbuild
-  MainIs:     Main.ml
+  Path:           .
+  BuildTools:     ocamlbuild
+  MainIs:         Main.ml
+  CompiledObject: best
