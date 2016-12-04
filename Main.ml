@@ -42,14 +42,28 @@ let rec fetch (n: int) (cs: prog): instr option =
 *)
 let next (xs: int list) (l: int) (p: int) (cs: prog) =
   match fetch p cs with
-  | Some Pop -> (xs, l, p+1, cs)
-  | Some Sub -> (xs, l, p+1, cs)
-  | Some Swap -> (xs, l, p+1, cs)
-  | Some (Push i) -> (xs, l, p+1, cs)
-  | Some (Jump i) -> (xs, l, p+1, cs)
-  | Some (Jeq i) -> (xs, l, p+1, cs)
-  | Some (Jlt i) -> (xs, l, p+1, cs)
-  | _ -> failwith "stuck"
+  | Some Pop      -> (match xs with
+                      | x :: y :: xs -> (y :: xs, l+1, p+1, cs)
+                      | _            -> failwith "stuck in pop")
+  | Some Sub      -> (match xs with
+                      | x :: y :: xs -> ((x - y) :: y :: xs, l, p+1, cs)
+                      | _            -> failwith "stuck in sub")
+  | Some Swap     -> (match xs with
+                      | x :: y :: xs -> (y :: x :: xs, l, p+1, cs)
+                      | _            -> failwith "stuck in swap")
+  | Some (Push i) -> (i :: xs, l-1, p+1, cs)
+  | Some (Jump i) -> (xs, l, i, cs)
+  | Some (Jeq i)  -> (match xs with
+                      | x :: y :: _ -> if x = y
+                                       then (xs, l, i, cs)
+                                       else (xs, l, p+1, cs)
+                      | _           -> failwith "stuck in jeq")
+  | Some (Jlt i)  -> (match xs with
+                      | x :: y :: _ -> if x < y
+                                       then (xs, l, i, cs)
+                                       else (xs, l, p+1, cs)
+                      | _           -> failwith "stuck in jlt")
+  | _             -> failwith "stuck"
 
 (**
   exec describes the effect of successfully executing a bytecode program
@@ -61,7 +75,7 @@ let rec exec (xs: int list) (l: int) (p: int) (cs: prog) =
          exec xs l p cs
 
 
-let eval (bytecode: string) (args: int list) : int =
+let eval (bytecode: string) (args: int list) : int option =
   let xs = args in
   let l = max_stack_depth - (List.length args) in
   let p = 0 in
@@ -72,7 +86,9 @@ let eval (bytecode: string) (args: int list) : int =
   List.iter stack (printf "%d ");
   printf "]\n";
   printf "enc: %s (orig: %s)\n" (encode (parse bytecode)) bytecode;
-  -1
+  match stack with
+  | result :: _ -> Some result
+  | _ -> None
 
 let spec =
   let open Command.Spec in
@@ -85,8 +101,9 @@ let main =
     ~summary:"Run a bytecode program"
     ~readme:(fun () -> "JIT compiles and executes x86 instructions corresponding to the bytecode.")
     spec
-    (fun bytecode args () -> (let open Printf in
-			      printf "Top of stack: %d\n" (eval bytecode args)))
+    (fun bytecode args () -> (match eval bytecode args with
+                              | Some result -> printf "Result: %d\n" result
+                              | None        -> printf "Executed fully, but nothing on stack."))
 
 let () =
   Command.run ~version:"0.1.0" main
