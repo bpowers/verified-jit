@@ -1,0 +1,15 @@
+OASISFormat:  0.4
+Name:         VerifiedJIT
+Version:      0.1.0
+Synopsis:     verified bytecode to x86 execution
+Authors:      Bobby Powers <bobbypowers@gmail.com>
+License:      ISC
+Description:  Hoare logic from "Verified Just-In-Time Compiler on X86"
+Homepage:     https://github.com/bpowers/verified-jit
+Plugins:      META (0.4), DevFiles (0.4)
+BuildDepends: core, threads
+
+Executable "verified-jit"
+  Path:       .
+  BuildTools: ocamlbuild
+  MainIs:     Main.ml
