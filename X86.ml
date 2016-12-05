@@ -35,12 +35,12 @@ type cond =
   | ALWAYS (* used for unconditional relative jumps *)
   | E (* E = equal *)
   | B (* B = below *)
+[@@deriving show]
   (* full conditions supported by x86: *)
   (* | E | NE *)
   (* | S | NS *)
   (* | A | NA *)
   (* | B | NB *)
-[@@deriving show]
 
 type dest_src =
   | RM_I of rm * imm
@@ -71,11 +71,16 @@ let ximm (w: int): char list =
 let instr_to_bytes (i: instr) : char list =
   match i with
   | Binop (Mov, R_RM (EAX, Reg EDI)) -> ['\x8B'; '\x07']
+  | Binop (Mov, RM_R (Reg EDI, EAX)) -> ['\x89'; '\x07']
+  | Binop (Mov, RM_I (Reg EAX, imm)) -> ['\xB8'] @ (ximm imm)
   | Binop (Add, RM_I (Reg EDI, imm)) -> if imm > 255;
                                         then failwith "ADD RM_I immediate too big"
                                         else ['\x83'; '\xC7'; w2w imm]
   | Binop (Cmp, R_RM (EAX, Reg EDI)) -> ['\x3B'; '\x07']
   | Binop (Sub, R_RM (EAX, Reg EDI)) -> ['\x2B'; '\x07']
+  | Binop (Sub, RM_I (Reg EDI, imm)) -> if imm > 255;
+                                        then failwith "SUB RM_I immediate too big"
+                                        else ['\x83'; '\xEF'; w2w imm]
   | Xchg (Reg EDI, EAX)              -> ['\x87'; '\x07']
   | Jcc (ALWAYS, imm)                -> ['\xE9'] @ (ximm imm)
   | Jcc (E, imm)                     -> ['\x0F'; '\x84'] @ (ximm imm)
@@ -87,7 +92,8 @@ let rec to_bytes (instrs: instr list): char list =
   List.map instr_to_bytes instrs |> List.flatten
 
 let rec encode (orig_cs: prog) (bytes_off: int) (cs: prog): instr list =
-  (* FIXME: needs to be length of bytes, not # of x86 instructions *)
+  let jump_len = 5 in (* jmp w/ relative offset is 5 bytes long *)
+  let condjump_len = 8 in (* cmp is 2 bytes, jcc is 6 bytes *)
   let rec xenc_length c =
     List.length (to_bytes (xenc (fun x -> 0) c))
   and xenc (t: int -> int) (c: Syntax.instr): instr list =
@@ -99,13 +105,11 @@ let rec encode (orig_cs: prog) (bytes_off: int) (cs: prog): instr list =
     | Push i -> [Binop (Sub, RM_I (Reg EDI, 4));
                  Binop (Mov, RM_R (Reg EDI, EAX));
                  Binop (Mov, RM_I (Reg EAX, i))]
-    | Jump i -> [Jcc (ALWAYS, (t i) - bytes_off - 5)]
-    | Jeq i  -> (* Printf.printf "jeq %d : %d (bytes_off: %d)\n" i (t i) bytes_off; *)
-                [Binop (Cmp, R_RM (EAX, Reg EDI));
-                 Jcc (E, (t i) - bytes_off - 8)]
-    | Jlt i  -> (* Printf.printf "jlt %d : %d (bytes_off: %d)\n" i (t i) bytes_off; *)
-                [Binop (Cmp, R_RM (EAX, Reg EDI));
-                 Jcc (B, (t i) - bytes_off - 8)]
+    | Jump i -> [Jcc (ALWAYS, (t i) - bytes_off - jump_len)]
+    | Jeq i  -> [Binop (Cmp, R_RM (EAX, Reg EDI));
+                 Jcc (E, (t i) - bytes_off - condjump_len)]
+    | Jlt i  -> [Binop (Cmp, R_RM (EAX, Reg EDI));
+                 Jcc (B, (t i) - bytes_off - condjump_len)]
     | Stop   -> [Jmp (Reg EDX)]
   in
   let rec addr cs a p: int =
