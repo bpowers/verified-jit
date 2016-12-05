@@ -14,4 +14,3 @@ Executable "verified-jit"
   BuildTools:     ocamlbuild
   MainIs:         Main.ml
   CompiledObject: best
-  CSources:       jit_exec.c
