@@ -33,15 +33,13 @@ let eval (bytecode: string) (xs: int list) : int option =
   let (stack, _, _, _) = Semantics.exec xs l p cs in
   let x86_instrs = X86.encode cs 0 cs in
   let open Printf in
-  printf "x86: [\n";
-  List.iter x86_instrs (fun i -> printf "\t%s\n" (X86.show_instr i));
+  printf "prog: %s\n" (Syntax.show_prog cs);
+  printf "x86 instructions: [\n";
+  List.iter x86_instrs (fun i -> printf "  %s\n" (X86.show_instr i));
   printf "]\n";
-
-  printf "x86 bytes:  [\n ";
-  List.iter (X86.to_string x86_instrs) (fun i -> printf " 0x%02x" (Char.to_int i));
+  printf "x86 bytes: [\n ";
+  List.iter (X86.to_bytes x86_instrs) (fun i -> printf " 0x%02x" (Char.to_int i));
   printf "\n]\n";
-
-  printf "prog:\n\t%s\n" (Syntax.show_prog cs);
 
   (* let open Printf in *)
   (* printf "stack: ["; *)

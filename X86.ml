@@ -68,7 +68,7 @@ let w2w (w: int): char =
 let ximm (w: int): char list =
   [w2w w; w2w (w asr 8); w2w (w lsr 16); w2w (w lsr 24)]
 
-let instr_to_string (i: instr) : char list =
+let instr_to_bytes (i: instr) : char list =
   match i with
   | Binop (Mov, R_RM (EAX, Reg EDI)) -> ['\x8B'; '\x07']
   | Binop (Add, RM_I (Reg EDI, imm)) -> if imm > 255;
@@ -77,22 +77,19 @@ let instr_to_string (i: instr) : char list =
   | Binop (Cmp, R_RM (EAX, Reg EDI)) -> ['\x3B'; '\x07']
   | Binop (Sub, R_RM (EAX, Reg EDI)) -> ['\x2B'; '\x07']
   | Xchg (Reg EDI, EAX)              -> ['\x87'; '\x07']
-  | Jcc (ALWAYS, imm)                -> (* let strseq: string list = List.map (fun i -> Printf.sprintf " 0x%02x" (Char.code i)) (ximm imm)  in *)
-                                        (* let istr: string = List.fold_left (fun a b -> a ^ b) "" strseq in *)
-                                        (* Printf.printf "JMP %d (%s)\n" imm (istr); *)
-                                        ['\xE9'] @ (ximm imm)
+  | Jcc (ALWAYS, imm)                -> ['\xE9'] @ (ximm imm)
   | Jcc (E, imm)                     -> ['\x0F'; '\x84'] @ (ximm imm)
   | Jcc (B, imm)                     -> ['\x0F'; '\x82'] @ (ximm imm)
   | Jmp (Reg EDX)                    -> ['\xFF'; '\xE2']
   | _ -> failwith (Printf.sprintf "don't know how to encode %s" (show_instr i))
 
-let rec to_string (instrs: instr list): char list =
-  List.map instr_to_string instrs |> List.flatten
+let rec to_bytes (instrs: instr list): char list =
+  List.map instr_to_bytes instrs |> List.flatten
 
 let rec encode (orig_cs: prog) (bytes_off: int) (cs: prog): instr list =
   (* FIXME: needs to be length of bytes, not # of x86 instructions *)
   let rec xenc_length c =
-    List.length (to_string (xenc (fun x -> 0) c))
+    List.length (to_bytes (xenc (fun x -> 0) c))
   and xenc (t: int -> int) (c: Syntax.instr): instr list =
     match c with
     | Pop    -> [Binop (Mov, R_RM (EAX, Reg EDI));
@@ -113,11 +110,11 @@ let rec encode (orig_cs: prog) (bytes_off: int) (cs: prog): instr list =
   in
   let rec addr cs a p: int =
     match (cs, a, p) with
-    | _, a, 0       -> Printf.printf "a\n"; a
-    | [], a, _      -> Printf.printf "I THINK THIS IS A BUG\n"; a
-    | c :: cs, a, p -> Printf.printf "c (%d) (%s)\n" (xenc_length c) (Syntax.show_instr c); addr cs (a + xenc_length c) (p - 1)
+    | _, a, 0       -> a
+    | [], a, _      -> a
+    | c :: cs, a, p -> addr cs (a + xenc_length c) (p - 1)
   in
   match cs with
   | [] -> []
   | c :: cs -> let instrs = xenc (addr orig_cs 0) c in
-               instrs @ (encode orig_cs (bytes_off + (List.length (to_string instrs))) cs)
+               instrs @ (encode orig_cs (bytes_off + (List.length (to_bytes instrs))) cs)
