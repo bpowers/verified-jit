@@ -16,11 +16,27 @@ __wrap_exec_fn:
 	mov %rsi,%rdi
 	add $4,%rdi
 
-	lea __wrap_exec_fn_ret@PLT,%rdx
+	// fudgy
+	mov 10(%rip),%rdx
 
-	add 4,%rdi
-	jmp *(%r8)
+	jmp *%r8
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+	nop
+
 .globl __wrap_exec_fn_ret
+.type __wrap_exec_fn_ret,@function
 __wrap_exec_fn_ret:
 	pop %r8
 	ret
