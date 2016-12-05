@@ -44,6 +44,9 @@ endif
 
 all: test
 
+setup:
+	opam install core ppx_deriving ctypes ctypes-foreign
+
 %.d.byte: %.ml $(INTERFACES) $(MLS) $(BUILD) $(LIB)
 	@echo "  OCAML $@"
 	$(OCAMLBUILD) $(OPTS) $@
@@ -66,4 +69,4 @@ test: $(MAIN)
 	@echo "  TEST"
 	LD_PRELOAD="$(PWD)/$(LIB)" ./Main.native '=6<4-j0sj0.' 2 20000000
 
-.PHONY: all clean test
+.PHONY: all clean test setup
