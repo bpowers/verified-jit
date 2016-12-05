@@ -1,7 +1,7 @@
 .section .text
-.globl __wrap_exec_fn
-.type __wrap_exec_fn,@function
-__wrap_exec_fn:
+.globl __exec_fn
+.type __exec_fn,@function
+__exec_fn:
 	push %rbp
 	mov %rsp, %rbp
 

@@ -1,41 +1,69 @@
-# OASIS_START
-# DO NOT EDIT (digest: a3c674b4239234cbbe53afe090018954)
+MAIN       = Main.native
+#MAIN       = Main.d.byte
+INTERFACES = $(wildcard *.mli)
+MLS        = $(wildcard *.ml)
+BUILD      = Makefile
+LIB        = libjit_exec.so
 
-SETUP = ocaml setup.ml
+OCAMLBUILD = ocamlbuild
+OPTS       = -use-ocamlfind \
+	-pkg core \
+	-pkg threads \
+	-pkg ppx_deriving.std \
+	-pkg ctypes \
+	-pkg ctypes.foreign \
+	-tag thread \
+	-tag debug \
+	-tag bin_annot \
+	-tag short_paths \
+	-cflags "-w A-4-33-40-41-42-43-34-44-27"  \
+	-cflags -strict-sequence \
+	-cflags -annot \
+	-no-hygiene \
 
-build: setup.data
-	$(SETUP) -build $(BUILDFLAGS)
+#	-lflags -cclib,-L$(PWD),-cclib,-ljit_exec,-cclib,-Xlinker,-cclib,--no-as-needed \
 
-doc: setup.data build
-	$(SETUP) -doc $(DOCFLAGS)
 
-test: setup.data build
-	$(SETUP) -test $(TESTFLAGS)
+# quiet output, but allow us to look at what commands are being
+# executed by passing 'V=1' to make, without requiring temporarily
+# editing the Makefile.
+ifneq ($V, 1)
+MAKEFLAGS += -s
+endif
 
-all:
-	$(SETUP) -all $(ALLFLAGS)
+# GNU make, you are the worst.
+.SUFFIXES:
+%: %,v
+%: RCS/%,v
+%: RCS/%
+%: s.%
+%: SCCS/s.%
 
-install: setup.data
-	$(SETUP) -install $(INSTALLFLAGS)
+# list only those we use
+.SUFFIXES: .ml .mli .d.byte .tex .pdf
 
-uninstall: setup.data
-	$(SETUP) -uninstall $(UNINSTALLFLAGS)
+all: test
 
-reinstall: setup.data
-	$(SETUP) -reinstall $(REINSTALLFLAGS)
+%.d.byte: %.ml $(INTERFACES) $(MLS) $(BUILD) $(LIB)
+	@echo "  OCAML $@"
+	$(OCAMLBUILD) $(OPTS) $@
+	touch -c $@
+
+%.native: %.ml $(INTERFACES) $(MLS) $(BUILD) $(LIB)
+	@echo "  OCAML $@"
+	$(OCAMLBUILD) $(OPTS) $@
+	touch -c $@
+
+$(LIB): jit_exec.c jit_exec_fn.s
+	@echo "  CC -shared $@"
+	cc -fPIC -Wall -shared -o libjit_exec.so jit_exec.c jit_exec_fn.s
 
 clean:
-	$(SETUP) -clean $(CLEANFLAGS)
+	$(OCAMLBUILD) -clean
+	rm -f *.out *.log *.aux $(LIB)
 
-distclean:
-	$(SETUP) -distclean $(DISTCLEANFLAGS)
+test: $(MAIN)
+	@echo "  TEST"
+	LD_PRELOAD="$(PWD)/$(LIB)" ./Main.native '=6<4-j0sj0.' 2 20000000
 
-setup.data:
-	$(SETUP) -configure $(CONFIGUREFLAGS)
-
-configure:
-	$(SETUP) -configure $(CONFIGUREFLAGS)
-
-.PHONY: build doc test all install uninstall reinstall clean distclean configure
-
-# OASIS_STOP
+.PHONY: all clean test
