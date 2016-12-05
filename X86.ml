@@ -80,7 +80,7 @@ let instr_to_string (i: instr) : char list =
   | Jcc (ALWAYS, imm)                -> let strseq: string list = List.map (fun i -> Printf.sprintf " 0x%02x" (Char.code i)) (ximm imm)  in
                                         let istr: string = List.fold_left (fun a b -> a ^ b) "" strseq in
                                         Printf.printf "JMP %d (%s)\n" imm (istr);
-                                        ['\xe9'] @ (ximm imm)
+                                        ['\xE9'] @ (ximm imm)
   | Jcc (E, imm)                     -> ['\x0F'; '\x84'] @ (ximm imm)
   | Jcc (B, imm)                     -> ['\x0F'; '\x82'] @ (ximm imm)
   | Jmp (Reg EDX)                    -> ['\xFF'; '\xE2']
@@ -115,4 +115,4 @@ let rec encode (a: int) (cs: prog): instr list =
     | [], a, _      -> a
     | c :: cs, a, p -> addr cs (a + xenc_length c) (p - 1)
   in
-  List.map (fun c -> xenc (addr cs a) c) cs |> List.flatten
+  List.map (fun c -> xenc (addr cs 0) c) cs |> List.flatten

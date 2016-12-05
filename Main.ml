@@ -41,6 +41,8 @@ let eval (bytecode: string) (xs: int list) : int option =
   List.iter (X86.to_string x86_instrs) (fun i -> printf " 0x%02x" (Char.to_int i));
   printf "\n]\n";
 
+  printf "prog:\n\t%s\n" (Syntax.show_prog cs);
+
   (* let open Printf in *)
   (* printf "stack: ["; *)
   (* List.iter stack (printf "%d "); *)

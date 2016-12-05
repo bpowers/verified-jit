@@ -7,5 +7,7 @@ type instr =
   | Jeq of int
   | Jlt of int
   | Stop
+[@@deriving show]
 
 type prog = instr list
+[@@deriving show]
