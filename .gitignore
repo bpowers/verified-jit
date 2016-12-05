@@ -4,3 +4,4 @@
 /Main.native
 /setup.log
 /_build
+/libjit_exec.so
