@@ -40,15 +40,18 @@ let eval (bytecode: string) (xs: int list) : int option =
   printf "x86 bytes: [\n ";
   List.iter (X86.to_bytes x86_instrs) (fun i -> printf " 0x%02x" (Char.to_int i));
   printf "\n]\n";
-
-  (* let open Printf in *)
-  (* printf "stack: ["; *)
-  (* List.iter stack (printf "%d "); *)
+  let jit_result = Jit.exec x86_instrs xs max_stack_depth in
+  let open Printf in
+  printf "jit result: %d" jit_result;
+  (* List.iter jit_result (printf "%d "); *)
   (* printf "]\n"; *)
   (* printf "enc: %s (orig: %s)\n" (encode (parse bytecode)) bytecode; *)
   match stack with
   | result :: _ -> Some result
   | _ -> None
+
+(* Jit.exec x86_instrs xs max_stack_depth *)
+(* Jit.exec x86_instrs (List.length x86_instrs) xs (List.length xs) max_stack_depth *)
 
 let spec =
   let open Command.Spec in

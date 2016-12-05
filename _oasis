@@ -7,7 +7,7 @@ License:      ISC
 Description:  Hoare logic from "Verified Just-In-Time Compiler on X86"
 Homepage:     https://github.com/bpowers/verified-jit
 Plugins:      META (0.4), DevFiles (0.4)
-BuildDepends: core, threads, ppx_deriving.std
+BuildDepends: core, threads, ppx_deriving.std, ctypes, ctypes.foreign
 
 Executable "verified-jit"
   Path:           .
