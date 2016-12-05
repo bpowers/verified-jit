@@ -4,7 +4,6 @@
 __wrap_exec_fn:
 	push %rbp
 	mov %rsp, %rbp
-	push %r8
 
 	// arg0: rdi
 	// arg1: rsi
@@ -17,7 +16,7 @@ __wrap_exec_fn:
 	add $4,%rdi
 
 	// fudgy
-	mov 10(%rip),%rdx
+	lea 10(%rip),%rdx
 
 	jmp *%r8
 	nop
@@ -35,8 +34,5 @@ __wrap_exec_fn:
 	nop
 	nop
 
-.globl __wrap_exec_fn_ret
-.type __wrap_exec_fn_ret,@function
-__wrap_exec_fn_ret:
-	pop %r8
+	pop %rbp
 	ret

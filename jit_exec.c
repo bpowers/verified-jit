@@ -19,6 +19,7 @@ jit_exec(uint8_t *code, int code_len, int *stack)
 	int result = __wrap_exec_fn(c, stack);
 
 	printf("(RESULT: %d)\n", result);
+	munmap(c, code_len);
 
 	return result;
 }
