@@ -66,7 +66,7 @@ let w2w (w: int): char =
   Char.chr (w land 0xff)
 
 let ximm (w: int): char list =
-  [w2w w; w2w (w lsr 8); w2w (w lsr 16); w2w (w lsr 24)]
+  [w2w w; w2w (w asr 8); w2w (w lsr 16); w2w (w lsr 24)]
 
 let instr_to_string (i: instr) : char list =
   match i with
@@ -77,7 +77,10 @@ let instr_to_string (i: instr) : char list =
   | Binop (Cmp, R_RM (EAX, Reg EDI)) -> ['\x3B'; '\x07']
   | Binop (Sub, R_RM (EAX, Reg EDI)) -> ['\x2B'; '\x07']
   | Xchg (Reg EDI, EAX)              -> ['\x87'; '\x07']
-  | Jcc (ALWAYS, imm)                -> ['\xe9'] @ (ximm imm)
+  | Jcc (ALWAYS, imm)                -> let strseq: string list = List.map (fun i -> Printf.sprintf " 0x%02x" (Char.code i)) (ximm imm)  in
+                                        let istr: string = List.fold_left (fun a b -> a ^ b) "" strseq in
+                                        Printf.printf "JMP %d (%s)\n" imm (istr);
+                                        ['\xe9'] @ (ximm imm)
   | Jcc (E, imm)                     -> ['\x0F'; '\x84'] @ (ximm imm)
   | Jcc (B, imm)                     -> ['\x0F'; '\x82'] @ (ximm imm)
   | Jmp (Reg EDX)                    -> ['\xFF'; '\xE2']
@@ -99,11 +102,11 @@ let rec encode (a: int) (cs: prog): instr list =
     | Push i -> [Binop (Sub, RM_I (Reg EDI, 4));
 		 Binop (Mov, RM_R (Reg EDI, EAX));
 		 Binop (Mov, RM_I (Reg EAX, i))]
-    | Jump i -> [Jcc (ALWAYS, t i)]
+    | Jump i -> [Jcc (ALWAYS, t i - 5)]
     | Jeq i  -> [Binop (Cmp, R_RM (EAX, Reg EDI));
-		 Jcc (E, t i)]
+		 Jcc (E, t i - 5)]
     | Jlt i  -> [Binop (Cmp, R_RM (EAX, Reg EDI));
-		 Jcc (B, t i)]
+		 Jcc (B, t i - 5)]
     | Stop   -> [Jmp (Reg EDX)]
   in
   let rec addr cs a p: int =
