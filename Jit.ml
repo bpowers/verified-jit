@@ -5,7 +5,7 @@ open Foreign
 type code = unit ptr
 let code : code typ = ptr void
 
-type stack = unit ptr
+type stack = int ptr
 let stack : code typ = ptr void
 
 let jit_exec =
