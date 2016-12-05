@@ -30,9 +30,11 @@ let eval (bytecode: string) (xs: int list) : int option =
   let l = max_stack_depth - (List.length xs) in
   let p = 0 in
   let cs = parse bytecode in
-  let (stack, _, _, _) = Semantics.exec xs l p cs in
-  let x86_instrs = X86.encode cs 0 cs in
+  let x86_instrs = X86.encode cs in
+  let jit_result = Jit.exec x86_instrs xs max_stack_depth in
   let open Printf in
+  printf "jit result: %d\n(now running in interpreter)\n" jit_result;
+  let (stack, _, _, _) = Semantics.exec xs l p cs in
   printf "prog: %s\n" (Syntax.show_prog cs);
   printf "x86 instructions: [\n";
   List.iter x86_instrs (fun i -> printf "  %s\n" (X86.show_instr i));
@@ -40,9 +42,6 @@ let eval (bytecode: string) (xs: int list) : int option =
   printf "x86 bytes: [\n ";
   List.iter (X86.to_bytes x86_instrs) (fun i -> printf " 0x%02x" (Char.to_int i));
   printf "\n]\n";
-  let jit_result = Jit.exec x86_instrs xs max_stack_depth in
-  let open Printf in
-  printf "jit result: %d" jit_result;
   (* List.iter jit_result (printf "%d "); *)
   (* printf "]\n"; *)
   (* printf "enc: %s (orig: %s)\n" (encode (parse bytecode)) bytecode; *)

@@ -91,7 +91,7 @@ let instr_to_bytes (i: instr) : char list =
 let rec to_bytes (instrs: instr list): char list =
   List.map instr_to_bytes instrs |> List.flatten
 
-let rec encode (orig_cs: prog) (bytes_off: int) (cs: prog): instr list =
+let rec encode' (orig_cs: prog) (bytes_off: int) (cs: prog): instr list =
   let jump_len = 5 in (* jmp w/ relative offset is 5 bytes long *)
   let condjump_len = 8 in (* cmp is 2 bytes, jcc is 6 bytes *)
   let rec xenc_length c =
@@ -121,4 +121,7 @@ let rec encode (orig_cs: prog) (bytes_off: int) (cs: prog): instr list =
   match cs with
   | [] -> []
   | c :: cs -> let instrs = xenc (addr orig_cs 0) c in
-               instrs @ (encode orig_cs (bytes_off + (List.length (to_bytes instrs))) cs)
+               instrs @ (encode' orig_cs (bytes_off + (List.length (to_bytes instrs))) cs)
+
+let encode (cs: prog): instr list =
+    encode' cs 0 cs
