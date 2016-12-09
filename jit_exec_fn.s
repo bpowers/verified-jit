@@ -1,4 +1,3 @@
-.section .text
 .globl __exec_fn
 .type __exec_fn,@function
 __exec_fn:
@@ -10,7 +9,7 @@ __exec_fn:
 
 	mov %rdi,%r8
 	// move top of stack into register
-	mov (%esi),%eax
+	mov (%rsi),%eax
 	// move rest of stack to proper address
 	mov %rsi,%rdi
 	add $4,%rdi
