@@ -19,8 +19,9 @@ OPTS       = -use-ocamlfind \
 	-cflags "-w A-4-33-40-41-42-43-34-44-27"  \
 	-cflags -strict-sequence \
 	-cflags -annot \
+	-cflags -g \
 	-no-hygiene \
-	-lflags -cclib,-l$(PWD)/libjit_exec.so,-cclib,-Xlinker,-cclib,--no-as-needed
+	-lflags -g,-cclib,-l$(PWD)/$(LIB)
 
 
 # quiet output, but allow us to look at what commands are being
