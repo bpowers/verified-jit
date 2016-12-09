@@ -20,8 +20,7 @@ OPTS       = -use-ocamlfind \
 	-cflags -strict-sequence \
 	-cflags -annot \
 	-no-hygiene \
-
-#	-lflags -cclib,-L$(PWD),-cclib,-ljit_exec,-cclib,-Xlinker,-cclib,--no-as-needed \
+	-lflags -cclib,-l$(PWD)/libjit_exec.so,-cclib,-Xlinker,-cclib,--no-as-needed
 
 
 # quiet output, but allow us to look at what commands are being
@@ -67,6 +66,7 @@ clean:
 
 test: $(MAIN)
 	@echo "  TEST"
-	LD_PRELOAD="$(PWD)/$(LIB)" ./Main.native '=6<4-j0sj0.' 2 20000000
+	./Main.native '=6<4-j0sj0.' 2 20000000
+#	LD_PRELOAD="$(PWD)/$(LIB)" ./Main.native '=6<4-j0sj0.' 2 20000000
 
 .PHONY: all clean test setup
