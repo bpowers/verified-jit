@@ -3,7 +3,25 @@ MAIN       = Main.native
 INTERFACES = $(wildcard *.mli)
 MLS        = $(wildcard *.ml)
 BUILD      = Makefile
-LIB        = libjit_exec.so
+
+UNAME_S   := $(shell uname -s)
+UNAME_M   := $(shell uname -m)
+
+ifeq ($(UNAME_S),Darwin)
+SO_SUFFIX  = dylib
+SHARED     = -dynamiclib -arch x86_64 -compatibility_version 1 -current_version 1
+else ifeq ($(UNAME_S),Linux)
+SO_SUFFIX  = so
+SHARED     = -shared
+else
+$(error Unsupported OS - only Linux and macOS are supported)
+endif
+
+ifneq ($(UNAME_M),x86_64)
+$(error Unsupported architecture - only 64-bit Intel (x86_64) is supported)
+endif
+
+LIB        = libjit_exec.$(SO_SUFFIX)
 
 OCAMLBUILD = ocamlbuild
 OPTS       = -use-ocamlfind \
@@ -57,9 +75,9 @@ setup:
 	$(OCAMLBUILD) $(OPTS) $@
 	touch -c $@
 
-$(LIB): jit_exec.c jit_exec_fn.s
+$(LIB): jit_exec.c jit_exec_fn.s $(BUILD)
 	@echo "  CC -shared $@"
-	cc -fPIC -Wall -shared -o libjit_exec.so jit_exec.c jit_exec_fn.s
+	cc -g -fPIC -Wall $(SHARED) -o $(LIB) jit_exec.c jit_exec_fn.s
 
 clean:
 	$(OCAMLBUILD) -clean
