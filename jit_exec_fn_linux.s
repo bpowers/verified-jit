@@ -1,3 +1,4 @@
+.section .text
 .globl __exec_fn
 .type __exec_fn,@function
 __exec_fn:

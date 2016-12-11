@@ -10,9 +10,11 @@ UNAME_M   := $(shell uname -m)
 ifeq ($(UNAME_S),Darwin)
 SO_SUFFIX  = dylib
 SHARED     = -dynamiclib -arch x86_64 -compatibility_version 1 -current_version 1
+OS         = macos
 else ifeq ($(UNAME_S),Linux)
 SO_SUFFIX  = so
 SHARED     = -shared
+OS         = linux
 else
 $(error Unsupported OS - only Linux and macOS are supported)
 endif
@@ -22,6 +24,7 @@ $(error Unsupported architecture - only 64-bit Intel (x86_64) is supported)
 endif
 
 LIB        = libjit_exec.$(SO_SUFFIX)
+LIB_SRCS   = jit_exec.c jit_exec_fn_$(OS).s
 
 OCAMLBUILD = ocamlbuild
 OPTS       = -use-ocamlfind \
@@ -75,17 +78,16 @@ setup:
 	$(OCAMLBUILD) $(OPTS) $@
 	touch -c $@
 
-$(LIB): jit_exec.c jit_exec_fn.s $(BUILD)
+$(LIB): $(LIB_SRCS) $(BUILD)
 	@echo "  CC -shared $@"
-	cc -g -fPIC -Wall $(SHARED) -o $(LIB) jit_exec.c jit_exec_fn.s
+	cc -g -fPIC -Wall $(SHARED) -o $(LIB) $(LIB_SRCS)
 
 clean:
 	$(OCAMLBUILD) -clean
 	rm -f *.out *.log *.aux $(LIB)
 
 test: $(MAIN)
-	@echo "  TEST"
+	@echo "  TEST ./Main.native '=6<4-j0sj0.' 2 20000000"
 	./Main.native '=6<4-j0sj0.' 2 20000000
-#	LD_PRELOAD="$(PWD)/$(LIB)" ./Main.native '=6<4-j0sj0.' 2 20000000
 
 .PHONY: all clean test setup
