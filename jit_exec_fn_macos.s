@@ -1,5 +1,5 @@
-.globl __exec_fn
-__exec_fn:
+.globl ___exec_fn
+___exec_fn:
 	push %rbp
 	mov %rsp, %rbp
 
