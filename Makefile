@@ -7,14 +7,21 @@ BUILD      = Makefile
 UNAME_S   := $(shell uname -s)
 UNAME_M   := $(shell uname -m)
 
+LIBNAME    = jit_exec
+
 ifeq ($(UNAME_S),Darwin)
-SO_SUFFIX  = dylib
-SHARED     = -dynamiclib -arch x86_64 -compatibility_version 1 -current_version 1
 OS         = macos
+SO_SUFFIX  = dylib
+LIB        = lib$(LIBNAME).$(SO_SUFFIX)
+SHARED     = -dynamiclib -install_name $(PWD)/lib$(LIBNAME).$(SO_SUFFIX) \
+             -arch x86_64 -compatibility_version 1 -current_version 1
+OLFLAGS    = -cclib,-L$(PWD),-cclib,-l$(LIBNAME)
 else ifeq ($(UNAME_S),Linux)
-SO_SUFFIX  = so
-SHARED     = -shared
 OS         = linux
+SO_SUFFIX  = so
+LIB        = lib$(LIBNAME).$(SO_SUFFIX)
+SHARED     = -shared
+OLFLAGS    = -cclib,-l$(PWD)/$(LIB)
 else
 $(error Unsupported OS - only Linux and macOS are supported)
 endif
@@ -23,7 +30,6 @@ ifneq ($(UNAME_M),x86_64)
 $(error Unsupported architecture - only 64-bit Intel (x86_64) is supported)
 endif
 
-LIB        = libjit_exec.$(SO_SUFFIX)
 LIB_SRCS   = jit_exec.c jit_exec_fn_$(OS).s
 
 OCAMLBUILD = ocamlbuild
@@ -42,7 +48,7 @@ OPTS       = -use-ocamlfind \
 	-cflags -annot \
 	-cflags -g \
 	-no-hygiene \
-	-lflags -g,-cclib,-l$(PWD)/$(LIB)
+	-lflags -g,$(OLFLAGS)
 
 
 # quiet output, but allow us to look at what commands are being
@@ -84,7 +90,7 @@ $(LIB): $(LIB_SRCS) $(BUILD)
 
 clean:
 	$(OCAMLBUILD) -clean
-	rm -f *.out *.log *.aux $(LIB)
+	rm -rf $(LIB)*
 
 test: $(MAIN)
 	@echo "  TEST ./Main.native '=6<4-j0sj0.' 2 20000000"
