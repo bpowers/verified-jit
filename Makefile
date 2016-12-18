@@ -15,13 +15,13 @@ SO_SUFFIX  = dylib
 LIB        = lib$(LIBNAME).$(SO_SUFFIX)
 SHARED     = -dynamiclib -install_name $(PWD)/lib$(LIBNAME).$(SO_SUFFIX) \
              -arch x86_64 -compatibility_version 1 -current_version 1
-OLFLAGS    = -cclib,-L$(PWD),-cclib,-l$(LIBNAME)
+OLFLAGS    = -lflags '-cclib,-L$(PWD),-cclib,-l$(LIBNAME)'
 else ifeq ($(UNAME_S),Linux)
 OS         = linux
 SO_SUFFIX  = so
 LIB        = lib$(LIBNAME).$(SO_SUFFIX)
 SHARED     = -shared
-OLFLAGS    = -cclib,-l$(PWD)/$(LIB)
+OLFLAGS    = -lflags '-cclib -l$(PWD)/$(LIB)'
 else
 $(error Unsupported OS - only Linux and macOS are supported)
 endif
@@ -48,7 +48,7 @@ OPTS       = -use-ocamlfind \
 	-cflags -annot \
 	-cflags -g \
 	-no-hygiene \
-	-lflags -g,$(OLFLAGS)
+	-lflags -g $(OLFLAGS)
 
 
 # quiet output, but allow us to look at what commands are being
