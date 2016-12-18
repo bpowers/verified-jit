@@ -32,6 +32,8 @@ endif
 
 LIB_SRCS   = jit_exec.c jit_exec_fn_$(OS).s
 
+TEST_ARGS  = '=6<4-j0sj0.' 2 2000000000
+
 OCAMLBUILD = ocamlbuild
 OPTS       = -use-ocamlfind \
 	-pkg core \
@@ -93,7 +95,7 @@ clean:
 	rm -rf $(LIB)*
 
 test: $(MAIN)
-	@echo "  TEST ./Main.native '=6<4-j0sj0.' 2 20000000"
-	./Main.native '=6<4-j0sj0.' 2 20000000
+	@echo "  TEST ./Main.native $(TEST_ARGS)"
+	./Main.native $(TEST_ARGS)
 
 .PHONY: all clean test setup
