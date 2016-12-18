@@ -6,5 +6,5 @@ type t =
   | NoStack
   | MmapFailed
   | MprotectFailed
-  | VerificationFailed
+  | VerificationFailed of string
 [@@deriving show]
