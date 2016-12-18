@@ -37,6 +37,7 @@ TEST_ARGS  = '=6<4-j0sj0.' 2 2000000000
 OCAMLBUILD = ocamlbuild
 OPTS       = -use-ocamlfind \
 	-pkg core \
+	-pkg z3 \
 	-pkg threads \
 	-pkg ppx_deriving.std \
 	-pkg ctypes \

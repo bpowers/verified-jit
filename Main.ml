@@ -4,7 +4,7 @@ open Syntax
 let max_stack_depth = 32
 
 let parse (bytecode: string) : prog =
-  Parser.program Lexer.token (Lexing.from_string bytecode)
+  BytecodeParse.program BytecodeLexer.token (Lexing.from_string bytecode)
 
 (* encodes a given program as an ASCII string *)
 let rec encode (prog: prog) : string =

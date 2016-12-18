@@ -1,6 +1,6 @@
 {
   open Lexing
-  open Parser
+  open BytecodeParse
 }
 
 let int = ['0'-'9']+
