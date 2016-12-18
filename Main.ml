@@ -29,7 +29,7 @@ let rec encode (prog: prog) : string =
 let debug_x86_instrs x86_instrs =
   printf "x86 instructions: [\n";
   x86_instrs |> List.iter ~f:(fun i -> printf "  %s\n" (X86.show_instr i));
-  printf "\n]\n"
+  printf "]\n"
 
 let debug_x86_bytes x86_instrs =
   printf "x86 bytes: [\n ";
@@ -37,20 +37,14 @@ let debug_x86_bytes x86_instrs =
   printf "\n]\n"
 
 let eval (bytecode: string) (xs: int list) : (int, Problem.t) Result.t =
-  (* let l = max_stack_depth - (List.length xs) in *)
-  (* let p = 0 in *)
-  let cs = parse bytecode in
-  let x86_instrs = X86.encode cs in
-  Printf.printf "prog: %s\n" (Syntax.show_prog cs);
-  debug_x86_instrs x86_instrs;
-  debug_x86_bytes x86_instrs;
-  match Verify.stack_maintenance x86_instrs xs max_stack_depth with
+  let program = parse bytecode in
+  let instrs = X86.encode program in
+  Printf.printf "prog: %s\n" (Syntax.show_prog program);
+  debug_x86_instrs instrs;
+  debug_x86_bytes instrs;
+  match Verify.stack_maintenance instrs xs max_stack_depth with
   | Error err -> Error err
-  | Ok ()     -> Jit.exec x86_instrs xs max_stack_depth
-  (* let (stack, _, _, _) = Semantics.exec xs l p cs in *)
-  (* match stack with *)
-  (* | result :: _ -> Some result *)
-  (* | _ -> None *)
+  | Ok ()     -> Jit.exec instrs xs max_stack_depth
 
 let spec =
   let open Command.Spec in

@@ -88,8 +88,19 @@ let instr_to_bytes (i: instr) : char list =
   | Jmp (Reg EDX)                    -> ['\xFF'; '\xE2']
   | _ -> failwith (Printf.sprintf "don't know how to encode %s" (show_instr i))
 
+let instr_len (instr : instr): int =
+  instr_to_bytes instr |> List.length
+
 let to_bytes (instrs: instr list): char list =
   List.map instr_to_bytes instrs |> List.flatten
+
+let rec instr_off_for_byte_off (instrs : instr list) (off : int): int =
+  match off, instrs with
+  | (0, _) -> 0
+  | (i, _) when i < 0 -> failwith (Printf.sprintf "bad offset %d" i)
+  | (_, []) -> failwith "end of instructions"
+  | (_, instr :: instrs) -> let len = instr_len instr in
+                            1 + instr_off_for_byte_off instrs (off - len)
 
 let rec encode' (orig_cs: prog) (bytes_off: int) (cs: prog): instr list =
   let jump_len = 5 in (* jmp w/ relative offset is 5 bytes long *)
