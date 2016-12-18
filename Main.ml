@@ -36,7 +36,7 @@ let debug_x86_bytes x86_instrs =
   X86.to_bytes x86_instrs |> List.iter ~f:(fun i -> printf " 0x%02x" (Char.to_int i));
   printf "\n]\n"
 
-let eval (bytecode: string) (xs: int list) : (int, Jit.error) Result.t =
+let eval (bytecode: string) (xs: int list) : (int, Problem.t) Result.t =
   (* let l = max_stack_depth - (List.length xs) in *)
   (* let p = 0 in *)
   let cs = parse bytecode in
@@ -44,7 +44,9 @@ let eval (bytecode: string) (xs: int list) : (int, Jit.error) Result.t =
   Printf.printf "prog: %s\n" (Syntax.show_prog cs);
   debug_x86_instrs x86_instrs;
   debug_x86_bytes x86_instrs;
-  Jit.exec x86_instrs xs max_stack_depth
+  match Verify.stack_maintenance x86_instrs xs max_stack_depth with
+  | Error err -> Error err
+  | Ok ()     -> Jit.exec x86_instrs xs max_stack_depth
   (* let (stack, _, _, _) = Semantics.exec xs l p cs in *)
   (* match stack with *)
   (* | result :: _ -> Some result *)
@@ -63,7 +65,7 @@ let main =
     spec
     (fun bytecode args () -> (match eval bytecode args with
                               | Ok result -> printf "Result: %d\n" result
-                              | Error err -> printf "JIT error: %s\n" (Jit.show_error err)))
+                              | Error err -> printf "JIT error: %s\n" (Problem.show err)))
 
 let () =
   Command.run ~version:"0.1.0" main
