@@ -46,7 +46,7 @@ let rec all_paths (instrs : X86.instr list) (pc: int) (curr : int list): int lis
   | _                 ->  pc :: curr |> all_paths instrs (pc + 1)
 
 
-let rec strongest_postcondition (solver : Smtlib.solver) (instr : X86.instr) (pc : int) (pre : edi) (is_final : bool): term list =
+let rec strongest_postcondition (solver : Smtlib.solver) (instr : X86.instr) (pc : int) (pre : edi): term list =
   let open X86 in
   match instr with
   | Binop (Add, RM_I (Reg EDI, imm)) -> assert_ solver (equals (const (edi_id pc)) (add (const (edi_id pre)) (Int imm)));
@@ -58,13 +58,10 @@ let rec strongest_postcondition (solver : Smtlib.solver) (instr : X86.instr) (pc
   | Binop (Mov, RM_I (Reg EAX, _))   (* changes value of top-of-stack, not size *)
   | Binop (Cmp, R_RM (EAX, Reg EDI)) (* sets eflags *)
   | Binop (Sub, R_RM (EAX, Reg EDI)) (* affects value of stack, not contents*)
-  | Xchg (Reg EDI, EAX)              -> assert_ solver (equals (const (edi_id pre)) (const (edi_id pc))); []
+  | Xchg (Reg EDI, EAX)
   | Jcc (ALWAYS, _)
   | Jcc (E, _)
   | Jcc (B, _)                       -> assert_ solver (equals (const (edi_id pre)) (const (edi_id pc))); []
-                                        (* if is_final *)
-                                        (* then [(equals (const (edi_id pc)) (const (imm)))] *)
-                                        (* else [] *)
   | Jmp (Reg EDX)                    -> assert_ solver (equals (const (edi_id pre)) (const (edi_id pc)));
                                         [(lte (const (edi_id pc)) (const "stack_top"));
                                          (gte (const (edi_id pc)) (const "stack_bottom"))]
@@ -107,7 +104,7 @@ let verify_path (solver : Smtlib.solver)
                 (xs : int list)
                 (max_stack_depth : int)
                 (pcs : int list): (unit, Problem.t) Result.t =
-  Printf.printf "path: [";
+  Printf.printf "path for verification: [";
   List.iter ~f:(fun (i : int) -> Printf.printf "%d; " i) pcs;
   Printf.printf "]\n";
   let assert_not_or (terms : term list): unit =
@@ -139,14 +136,14 @@ let verify_path (solver : Smtlib.solver)
         let is_final = (i = (pcs_len - 1)) in
         let instr = List.nth instrs pc |> Option.value_exn in
         let pre = List.nth pcs (i-1) |> Option.value ~default:(-1) in
-        let conds = strongest_postcondition solver instr pc pre is_final in
+        let conds = strongest_postcondition solver instr pc pre in
         match is_final, instr with
         | true, X86.Jcc (_, imm) -> (equals (const (edi_id pc)) (const (edi_id (decode_target instrs pc imm)))) :: conds
         | _, _ -> conds)
   |> List.fold_left ~init:[] ~f:(fun a b -> List.append a b)
   |> assert_not_or;
   let sat = check_sat solver in
-  let mdl = get_model solver in
+  let _ = get_model solver in
   pop solver;
   match sat with
   | Sat     -> Error (Problem.VerificationFailed "stack over or underflow")
