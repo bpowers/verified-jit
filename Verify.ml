@@ -4,9 +4,21 @@ open Smtlib
 let z3_path = "./z3"
 
 
+type edi = int
+
+let edi_id (i : edi) =
+  Printf.sprintf "edi%d" i
+
+
 (* variable definition that matches what Z3 returns in the case of a
    satisfiable model *)
 type def = Def of string * int
+
+let decode_target instrs pc imm =
+  let pc_byte_off = (List.take instrs (pc+1)) |> X86.to_bytes |> List.length in
+  (* imm is a relative offset from the end of this instruction *)
+  let abs_offset = (pc_byte_off + imm) in
+  X86.instr_off_for_byte_off instrs abs_offset
 
 (* Similar to how exec/next in Semantics represent the PC as an
    int, we represent paths as sequences of offsets into instrs *)
@@ -16,35 +28,25 @@ let rec all_paths (instrs : X86.instr list) (pc: int) (curr : int list): int lis
     | Some instr -> instr
     | None -> failwith "unreachable: bad instr index"
   in
-  let decode_target imm =
-    let pc_byte_off = (List.take instrs (pc+1)) |> X86.to_bytes |> List.length in
-    (* imm is a relative offset from the end of this instruction *)
-    let abs_offset = (pc_byte_off + imm) in
-    X86.instr_off_for_byte_off instrs abs_offset
-  in
   match instr with
   | Jcc (ALWAYS, imm) -> let curr = pc :: curr in
-                         let target = decode_target imm in
+                         let target = decode_target instrs pc imm in
                          if List.mem curr target
-                         then [target :: curr]
+                         then [curr]
                          else all_paths instrs target curr
   | Jcc (cond, imm)   -> let curr = pc :: curr in
-                         let target = decode_target imm in
+                         let target = decode_target instrs pc imm in
                          let lbranch = all_paths instrs (pc + 1) curr in
                          let rbranch = if List.mem curr target
-                                       then [target :: curr]
+                                       then [curr]
                                        else all_paths instrs target curr
                          in
                          List.append lbranch rbranch
   | Jmp (reg)         -> [pc :: curr] (* from Stop instruction *)
   | _                 ->  pc :: curr |> all_paths instrs (pc + 1)
 
-type edi = int
 
-let edi_id (i : edi) =
-  Printf.sprintf "edi%d" i
-
-let rec strongest_postcondition (solver : Smtlib.solver) (instr : X86.instr) (pc : int) (pre : edi): term list =
+let rec strongest_postcondition (solver : Smtlib.solver) (instr : X86.instr) (pc : int) (pre : edi) (is_final : bool): term list =
   let open X86 in
   match instr with
   | Binop (Add, RM_I (Reg EDI, imm)) -> assert_ solver (equals (const (edi_id pc)) (add (const (edi_id pre)) (Int imm)));
@@ -56,10 +58,13 @@ let rec strongest_postcondition (solver : Smtlib.solver) (instr : X86.instr) (pc
   | Binop (Mov, RM_I (Reg EAX, _))   (* changes value of top-of-stack, not size *)
   | Binop (Cmp, R_RM (EAX, Reg EDI)) (* sets eflags *)
   | Binop (Sub, R_RM (EAX, Reg EDI)) (* affects value of stack, not contents*)
-  | Xchg (Reg EDI, EAX)              (* affects value of stack, not contents*)
+  | Xchg (Reg EDI, EAX)              -> assert_ solver (equals (const (edi_id pre)) (const (edi_id pc))); []
   | Jcc (ALWAYS, _)
   | Jcc (E, _)
   | Jcc (B, _)                       -> assert_ solver (equals (const (edi_id pre)) (const (edi_id pc))); []
+                                        (* if is_final *)
+                                        (* then [(equals (const (edi_id pc)) (const (imm)))] *)
+                                        (* else [] *)
   | Jmp (Reg EDX)                    -> assert_ solver (equals (const (edi_id pre)) (const (edi_id pc)));
                                         [(lte (const (edi_id pc)) (const "stack_top"));
                                          (gte (const (edi_id pc)) (const "stack_bottom"))]
@@ -69,6 +74,7 @@ let rec strongest_postcondition (solver : Smtlib.solver) (instr : X86.instr) (pc
 (* shouldn't this be in the stdlib somewhere? *)
 let is_some (a : 'a option) = match a with | Some _ -> true | None -> false
 let get (a : 'a option) = match a with | Some x -> x | None -> failwith "get of None"
+
 
 (* All SInts returned by Z3 are nats, negatives are represented by (- $nat) :\ *)
 let get_def (name : string) (sexp : sexp) : def option = match sexp with
@@ -126,16 +132,21 @@ let verify_path (solver : Smtlib.solver)
                          (mul (Int max_stack_depth)
                               (Int 4))));
   assert_ solver (gt (const "stack_bottom") (Int 0));
+  let pcs_len = List.length pcs in
   pcs
   |> List.mapi
     ~f:(fun i pc ->
+        let is_final = (i = (pcs_len - 1)) in
         let instr = List.nth instrs pc |> Option.value_exn in
         let pre = List.nth pcs (i-1) |> Option.value ~default:(-1) in
-        strongest_postcondition solver instr pc pre)
+        let conds = strongest_postcondition solver instr pc pre is_final in
+        match is_final, instr with
+        | true, X86.Jcc (_, imm) -> (equals (const (edi_id pc)) (const (edi_id (decode_target instrs pc imm)))) :: conds
+        | _, _ -> conds)
   |> List.fold_left ~init:[] ~f:(fun a b -> List.append a b)
   |> assert_not_or;
   let sat = check_sat solver in
-  (* let mdl = get_model solver in *)
+  let mdl = get_model solver in
   pop solver;
   match sat with
   | Sat     -> Error (Problem.VerificationFailed "stack over or underflow")
