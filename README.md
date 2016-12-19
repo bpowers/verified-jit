@@ -76,6 +76,14 @@ against absolute paths. (on Fedora: `sudo alternatives --set ld
 /usr/bin/ld.gold`)
 
 To build, make sure you have ocaml and z3 installed and on your path.
+On macOS this is:
+
+```sh
+$ brew install ocaml opam z3
+```
+
+
+Then:
 
 ```sh
 $ opam repository add plasma-opam https://github.com/plasma-umass/opam-repository.git
