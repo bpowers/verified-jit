@@ -4,6 +4,7 @@ type t =
   | NoCode
   | BadCodeLen
   | NoStack
+  | StackTooSmall
   | MmapFailed
   | MprotectFailed
   | VerificationFailed of string
