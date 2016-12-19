@@ -75,7 +75,7 @@ endif
 all: test
 
 setup:
-	opam install core ppx_deriving ctypes ctypes-foreign
+	opam install core ppx_deriving ctypes ctypes-foreign ocaml-z3
 
 %.d.byte: %.ml $(INTERFACES) $(MLS) $(BUILD) $(LIB)
 	@echo "  OCAML $@"
