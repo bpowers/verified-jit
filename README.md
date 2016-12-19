@@ -72,7 +72,8 @@ BUILDING
 
 This project builds under macOS and Linux.  Note: on Linux, you must
 use the Gold linker, as the old BFD linker doesn't like linking
-against absolute paths.
+against absolute paths. (on Fedora: `sudo alternatives --set ld
+/usr/bin/ld.gold`)
 
 To build, make sure you have ocaml and z3 installed and on your path.
 
