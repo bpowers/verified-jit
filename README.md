@@ -1,9 +1,9 @@
 A Verified JIT for X86
 ======================
 
-This project is based on the paper (Verified Just-In-Time Compiler on
-x86)[https://www.cl.cam.ac.uk/~mom22/jit/jit.pdf] by (Magnus
-Myreen)[https://www.cl.cam.ac.uk/~mom22/].
+This project is based on the paper [Verified Just-In-Time Compiler on
+x86](https://www.cl.cam.ac.uk/~mom22/jit/jit.pdf) by [Magnus
+Myreen](https://www.cl.cam.ac.uk/~mom22/).
 
 We implement a sound, incomplete analysis that ensures that the
 just-in-time compiled machine code corresponding to a bytecode program
