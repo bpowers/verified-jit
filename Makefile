@@ -21,7 +21,7 @@ OS         = linux
 SO_SUFFIX  = so
 LIB        = lib$(LIBNAME).$(SO_SUFFIX)
 SHARED     = -shared
-OLFLAGS    = -lflags '-cclib -l$(PWD)/$(LIB)'
+OLFLAGS    = -lflags '-cclib $(PWD)/$(LIB)'
 else
 $(error Unsupported OS - only Linux and macOS are supported)
 endif
